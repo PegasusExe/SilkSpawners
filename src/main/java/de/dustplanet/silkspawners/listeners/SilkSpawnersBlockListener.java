@@ -47,6 +47,34 @@ public class SilkSpawnersBlockListener implements Listener {
         Block block = event.getBlock();
         Player player = event.getPlayer();
 
+		// Freie Plätze
+        int empty = 0;
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item == null || item.getType() == Material.AIR) empty++;
+        }
+
+		// leeren Armor ermitteln Da es bei getContents mit dirn ist
+        int armorempty = 0;
+        for (ItemStack item : player.getInventory().getArmorContents()) {
+            if (item == null || item.getType() == Material.AIR) armorempty++;
+        }
+
+		// second hand ermitteln Da es bei getContents mit dirn ist
+        int sechand = 0;
+        ItemStack itemInOFFHand = player.getInventory().getItemInOffHand();
+        if (itemInOFFHand == null || itemInOFFHand.getType() == Material.AIR) sechand++;
+
+		// Freie Plätzi im Inventar ermitteln
+        empty= empty - sechand - armorempty;
+
+		// Keine Freien Plätze, darf also nicht abbauen
+        if (empty == 0){
+            plugin.informPlayer(player,
+                    ChatColor.translateAlternateColorCodes('\u0026', plugin.localization.getString("inventroyisfull")));
+            event.setCancelled(true);
+            return;
+        }
+
         // We just want the mob spawner events
         if (block.getType() != Material.MOB_SPAWNER) {
             return;
@@ -132,41 +160,34 @@ public class SilkSpawnersBlockListener implements Listener {
             }
             if (randomNumber < dropChance) {
                 // Drop spawner
-                world.dropItemNaturally(block.getLocation(),
-                        su.newSpawnerItem(entityID, su.getCustomSpawnerName(su.eid2MobID.get(entityID)), 1, false));
+                // Drop spawner
+                //world.dropItemNaturally(block.getLocation(),
+                //        su.newSpawnerItem(entityID, su.getCustomSpawnerName(su.eid2MobID.get(entityID)), 1, false));
+
+                player.getInventory().addItem(new ItemStack(su.newSpawnerItem(entityID, su.getCustomSpawnerName(su.eid2MobID.get(entityID)), 1, false)));
+
             }
             return;
         }
 
         // no silk touch
         if (player.hasPermission("silkspawners.destroydrop." + mobName)) {
-            if (plugin.config.getBoolean("destroyDropEgg", false)) {
-                // Calculate drop chance
-                randomNumber = rnd.nextInt(100);
-                if (plugin.mobs.contains("creatures." + mobID + ".eggDropChance")) {
-                    dropChance = plugin.mobs.getInt("creatures." + mobID + ".eggDropChance", 100);
-                } else {
-                    dropChance = plugin.config.getInt("eggDropChance", 100);
-                }
-                if (randomNumber < dropChance) {
-                    // Drop egg
-                    world.dropItemNaturally(block.getLocation(), su.newEggItem(entityID, su.eid2MobID.get(entityID), 1));
-                }
+            // Calculate drop chance
+            if (plugin.mobs.contains("creatures." + mobID + ".silkDropChance")) {
+                dropChance = plugin.mobs.getInt("creatures." + mobID + ".silkDropChance", 100);
+            } else {
+                dropChance = plugin.config.getInt("silkDropChance", 100);
             }
-            // Drop iron bars (or not)
-            int dropBars = plugin.config.getInt("destroyDropBars", 0);
-            if (dropBars != 0) {
-                // Calculate drop chance
-                randomNumber = rnd.nextInt(100);
-                if (plugin.mobs.contains("creatures." + mobID + ".destroyDropChance")) {
-                    dropChance = plugin.mobs.getInt("creatures." + mobID + ".destroyDropChance", 100);
-                } else {
-                    dropChance = plugin.config.getInt("destroyDropChance", 100);
-                }
-                if (randomNumber < dropChance) {
-                    world.dropItem(block.getLocation(), new ItemStack(Material.IRON_FENCE, dropBars));
-                }
+            if (randomNumber < dropChance) {
+                // Drop spawner
+                // Drop spawner
+                //world.dropItemNaturally(block.getLocation(),
+                //        su.newSpawnerItem(entityID, su.getCustomSpawnerName(su.eid2MobID.get(entityID)), 1, false));
+
+                player.getInventory().addItem(new ItemStack(su.newSpawnerItem(entityID, su.getCustomSpawnerName(su.eid2MobID.get(entityID)), 1, false)));
+
             }
+            return;
         }
     }
 
